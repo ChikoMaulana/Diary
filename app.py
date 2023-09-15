@@ -1,3 +1,7 @@
+import os
+from os.path import join, dirname
+from dotenv import load_dotenv
+
 from flask import Flask, render_template, jsonify, request
 app = Flask(__name__)
 
@@ -5,8 +9,11 @@ from pymongo import MongoClient
 
 from datetime import datetime
 
-client = MongoClient('mongodb+srv://chikodatabase:chiko123@chikodata.og7ni.mongodb.net')
-db = client.dbsparta
+MONGODB_URI = os.environ.get('MONGO_DB_URI')
+DB_NAME = os.environ.get("DB_NAME")
+
+client = MongoClient(MONGODB_URI)
+db = client[DB_NAME]
 
 @app.route('/')
 def home():
@@ -19,9 +26,6 @@ def show_diary():
 
 @app.route('/diary', methods=['POST'])
 def save_diary():
-    title_receive = request.form.get("title_give")
-    content_receive = request.form.get("content_give")
-
     file = request.files['file_give']
     extension = file.filename.split('.')[-1]
     today = datetime.now()
@@ -33,12 +37,18 @@ def save_diary():
     pp_extension = pp.filename.split('.')[-1]
     pp_filename = f'static/profile/pp-{mytime}.{pp_extension}'
     pp.save(pp_filename)
+    
+    timestamps = today.strftime('%Y.%m.%d | %H:%M:%S')
 
+    
+    title_receive = request.form.get("title_give")
+    content_receive = request.form.get("content_give")
     doc = {
         'pp': pp_filename,
         'file': filename,
         'title':title_receive,
-        'content':content_receive
+        'content':content_receive,
+        'time': timestamps
     }
     db.diary.insert_one(doc)
 
